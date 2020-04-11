@@ -1,0 +1,139 @@
+---
+title: "hw5"
+author: "Ritika Agrawal"
+github username: "ritikagrawal1710"
+date: "April 10, 2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Liquor Sales in Iowa
+
+This dataset https://data.iowa.gov/Sales-Distribution/2019-Iowa-Liquor-Sales/38x4-vs5h contains the spirits purchase information of Iowa Class “E” liquor licensees by product and date of purchase for 2019. The dataset can be used to analyze total spirits sales in Iowa of individual products at the store level.
+
+**Submission instructions**: Create a folder named `ds202_hw5`, and name the RMarkDown file including your solutions `hw5.Rmd` under this folder. For the submission, create a GitHub repository named `ds202_hw5` under your GitHub account, and push both `hw5.Rmd` and the knitted `hw5.html` before the deadline. I will assume you use the same GitHub username as for your HW4 submission. The latest version of your homework appearing on GitHub before the deadline is graded. *It is crucial to follow the exact folder structure and file names*, so that your homework can be reproduced and graded by an automated script. This homework is **due on April 10** by 11:59 pm.
+
+1. The complete dataset is too large. Download and import the alcohol sales data for Ames only: 
+
+  a. Go to https://data.iowa.gov/Sales-Distribution/2019-Iowa-Liquor-Sales/38x4-vs5h
+  b. Click Filter -- Filter -- Go advanced now
+  c. Add a New Filter Condition: City is Ames.
+  d. Export -- CSV -- Download
+  e. Use `readr::read_csv` to import.
+  
+```{r}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+
+liq_sales <- read_csv("2019_Iowa_Liquor_Sales.csv")
+
+head(liq_sales)
+```
+2. Data cleaning: 
+  a. extract geographic latitude and longitude from the variable `Store Location`
+  b. make sure the variables are in the correct type, by converting incorrect variable types.
+  c. extract year, month and day from the variable `Date` as separate columns.
+  
+```{r}
+liq_sales$long = substr(liq_sales$`Store Location`,8,17)
+liq_sales$lat = substr(liq_sales$`Store Location`,18,27)
+liq_sales
+
+liq_sales$date_1 = substr(liq_sales$Date,1,1)
+liq_sales$month = substr(liq_sales$Date,5,5)
+liq_sales$year = substr(liq_sales$Date,5,10)
+
+liq_sales
+
+
+
+```
+
+3. First overview:
+  a. Plot a scatterplot of lat and long of store locations. 
+
+  
+```{r}
+
+library(ggplot2)
+
+ggplot(liq_sales, aes(x=long, y=lat)) +
+  geom_point(size=2, shape=23) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+  b. Provide a visual breakdown of the liquor category (by `Category Name`). Include volume sold in the breakdown.
+  
+  
+```{r}
+bb= liq_sales %>%
+  group_by(liq_sales$`Category Name`) %>%
+  summarize(volume = sum(`Volume Sold (Liters)`, na.rm = TRUE))
+colnames(bb) <- c("type","volume")
+ggplot(data=bb, aes(x=bb$type, y=bb$volume)) +
+  geom_bar(stat="identity", width=0.5)+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+4. Find the daily sales liquor sales in Ames in 2019. Summarize the number of sales, volume of liquor sold, and amount of money spent.
+
+```{r}
+
+number_of_sales <- nrow(liq_sales)
+number_of_sales
+volume_of_liq_sold <- sum(liq_sales$`Volume Sold (Liters)`)
+volume_of_liq_sold
+amt_of_money_spent <- sum(liq_sales$`Sale (Dollars)`)
+amt_of_money_spent
+
+```
+
+
+Response: 
+The number of sales are 63103. 
+Volume of liqur sold is 590873.8 Litres. 
+Amount of money spent is 9,052,382 dollars
+
+
+5. Plot volume sold by day (use a scatterplot of volume by day and facet by month). Discover trends with the help of `geom_smooth`. Describe any patterns.
+
+```{r}
+cc = liq_sales %>%
+  group_by(liq_sales$Date) %>%
+  summarize(volume = sum(`Volume Sold (Liters)`, na.rm = TRUE))
+cc
+colnames(cc) <- c("Day","volume")
+cc$month = substr(cc$Day,1,2)
+cc
+ggplot(data=cc, aes(x=cc$Day, y=cc$volume)) +
+  geom_bar(stat="identity", width=0.5)+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+ facet_grid(rows = vars(month)) + geom_smooth()
+
+
+```
+
+Response: The volume of liquor sales increases over the weekends. 
+
+
+6. Find the dates for ISU football home games in Fall 2019. Can you see a pattern? 
+
+```{r}
+
+
+games=subset(liq_sales, liq_sales$Date == "09/28/2019" & liq_sales$Date == "10/05/2019" & liq_sales$Date == "10/12/2019" & liq_sales$Date == "10/19/2019" & liq_sales$Date == "10/26/2019" & liq_sales$Date == "11/09/2019" & liq_sales$Date == "11/16/2019" & liq_sales$Date == "11/23/2019" & liq_sales$Date == "11/30/2019" & liq_sales$Date == "12/28/2019")
+games
+```
+
+
+Response: As can be seen from the output of the code, there are no invoices on the dates of the football matches, thus indicating that there were no sales on those days. 
+
+I did a pivot on the data to double check and found that there were no invoices on the dates f the football games in Fall 2019. 
+
+Note: your submission is supposed to be fully reproducible, i.e. the TA and I will 'knit' your submission in RStudio. 
